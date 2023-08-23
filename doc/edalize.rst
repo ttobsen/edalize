@@ -60,6 +60,14 @@ edalize.modelsim module
     :undoc-members:
     :show-inheritance:
 
+edalize.questaformal module
+---------------------------
+
+.. automodule:: edalize.questaformal
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 edalize.openfpga module
 -----------------------
 

@@ -106,6 +106,7 @@ icestorm        String                Options for Project IceStorm_
 ise             String                Options for Xilinx ISE_
 isim            String                Options for Xilinx iSim_
 modelsim        String                Options for Mentor ModelSim_
+questaformal    String                Options for Mentor QuestaFormal_
 openfpga        String                Options for OpenFPGA OpenFPGA_
 quartus         String                Options for Intel Quartus_
 rivierapro      String                Options for Aldec RivieraPro_
@@ -183,6 +184,21 @@ Field Name       Type                  Description
 vlog_options     List of String        Extra options for each Verilog file compiled with `vlog`
 vsim_options     List of String        Extra options for running the simulation with `vsim`
 ================ ===================== ===========
+
+questaformal
+~~~~~~~~~~~~
+
+================= ===================== ===========
+Field Name        Type                  Description
+================= ===================== ===========
+vlog_options      List of String        Extra options for each Verilog file compiled with `vlog`
+vcom_options      List of String        Extra options for each VHDL file compiled with `vcom`
+qverify_options   List of String        Extra options for running the verification with `qverify`
+qverify_do_files  List of String        List of do-files executed by `qverify`
+autocheck_options List of String        List of autocheck options used by `qverify`
+================= ===================== ===========
+
+If ``qverify_do_files`` is used, the ``autocheck_options`` are ignored.
 
 openfpga
 ~~~~~~~~

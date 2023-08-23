@@ -18,7 +18,7 @@ QVERIFY_OPTIONS  ?= {qverify_options}
 all: work
 
 run: work
-	$(QVERIFY) $(QVERIFY_OPTIONS) -do "do edalize_autocheck.tcl; exit"
+	$(QVERIFY) $(QVERIFY_OPTIONS) -do {qverify_do}
 
 run-gui: work
 	$(QVERIFY) -gui
@@ -26,21 +26,7 @@ run-gui: work
 work:
 	$(QVERIFY) -c -do "do edalize_main.tcl; exit"
 
-clean: {clean_targets}
-"""
-
-VPI_MAKE_SECTION = """
-{name}_OBJS := {objs}
-{name}_LIBS := {libs}
-{name}_INCS := $(INCS) {incs}
-
-$({name}_OBJS): CPPFLAGS := $({name}_INCS)
-
-{name}: $({name}_OBJS)
-	$(LD) $(LDFLAGS) -o $@ $? $({name}_LIBS)
-
-clean_{name}:
-	$(RM) $({name}_OBJS) {name}
+clean:
 """
 
 
@@ -68,6 +54,11 @@ class Questaformal(Edatool):
                         "name": "qverify_options",
                         "type": "String",
                         "desc": "Additional run options for qverify",
+                    },
+                    {
+                        "name": "qverify_do_files",
+                        "type": "String",
+                        "desc": "List of do files to run with qverify",
                     },
                     {
                         "name": "autocheck_options",
@@ -133,7 +124,6 @@ class Questaformal(Edatool):
                 tcl_build_rtl.write("{} {}\n".format(cmd, " ".join(args)))
 
     def _write_makefile(self):
-        vpi_make = open(os.path.join(self.work_root, "Makefile"), "w")
         _parameters = []
         for key, value in self.vlogparam.items():
             _parameters += ["{}={}".format(key, self._param_value_str(value))]
@@ -147,32 +137,27 @@ class Questaformal(Edatool):
 
         _qverify_options = self.tool_options.get("qverify_options", [])
 
-        _modules = [m["name"] for m in self.vpi_modules]
-        _clean_targets = " ".join(["clean_" + m for m in _modules])
+        _autocheck_options = self.tool_options.get("autocheck_options", [])
+        if _autocheck_options:
+            _qverify_do = ['"do edalize_autocheck.tcl; exit"']
+
+        _qverify_do_files = self.tool_options.get("qverify_do_files", [])
+        if _qverify_do_files:
+            _qverify_do = '"'
+            for do_file in _qverify_do_files:
+                _qverify_do += "do {}; ".format(do_file)
+            _qverify_do += 'exit"'
+
+        makefile = open(os.path.join(self.work_root, "Makefile"), "w")
         _s = MAKE_HEADER.format(
             toplevel=self.toplevel,
             parameters=" ".join(_parameters),
             plusargs=" ".join(_plusargs),
             qverify_options=" ".join(_qverify_options),
-            modules=" ".join(_modules),
-            clean_targets=_clean_targets,
+            qverify_do=_qverify_do,
         )
-        vpi_make.write(_s)
-
-        for vpi_module in self.vpi_modules:
-            _name = vpi_module["name"]
-            _objs = [os.path.splitext(s)[0] + ".o" for s in vpi_module["src_files"]]
-            _libs = ["-l" + l for l in vpi_module["libs"]]
-            _incs = ["-I" + d for d in vpi_module["include_dirs"]]
-            _s = VPI_MAKE_SECTION.format(
-                name=_name,
-                objs=" ".join(_objs),
-                libs=" ".join(_libs),
-                incs=" ".join(_incs),
-            )
-            vpi_make.write(_s)
-
-        vpi_make.close()
+        makefile.write(_s)
+        makefile.close()
 
     def configure_main(self):
         tcl_main = open(os.path.join(self.work_root, "edalize_main.tcl"), "w")
@@ -180,10 +165,7 @@ class Questaformal(Edatool):
         tcl_main.write("do edalize_build_rtl.tcl\n")
 
         tcl_autocheck = open(os.path.join(self.work_root, "edalize_autocheck.tcl"), "w")
-        _autocheck_options = self.tool_options.get(
-            "autocheck_options",
-            ["enable", "compile -d {}".format(self.toplevel), "verify -timeout 10m"],
-        )
+        _autocheck_options = self.tool_options.get("autocheck_options", [])
         for ac_option in _autocheck_options:
             tcl_autocheck.write("autocheck {}\n".format(ac_option))
         tcl_autocheck.close()
